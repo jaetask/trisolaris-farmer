@@ -150,6 +150,8 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
         if (lp0Bal != 0 && lp1Bal != 0) {
+            IERC20Upgradeable(lpToken0).safeIncreaseAllowance(SPOOKY_ROUTER, lp0Bal);
+            IERC20Upgradeable(lpToken1).safeIncreaseAllowance(SPOOKY_ROUTER, lp1Bal);
             IUniswapV2Router02(SPOOKY_ROUTER).addLiquidity(
                 lpToken0,
                 lpToken1,
