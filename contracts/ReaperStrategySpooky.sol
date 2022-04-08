@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 /**
  * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest BOO rewards and recompound.
  */
-contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
+contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // 3rd-party contract addresses
@@ -36,10 +36,8 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
     /**
      * @dev Paths used to swap tokens:
      * {booToWftmPath} - to swap {BOO} to {WFTM} (using SPOOKY_ROUTER)
-     * {booToUsdcPath} - to swap half of {BOO} to {lpToken0} (using SPOOKY_ROUTER)
      */
     address[] public booToWftmPath;
-    address[] public booToUsdcPath;
 
     /**
      * @dev Spooky variables.
@@ -54,12 +52,12 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
     function initialize(
         address _vault,
         address[] memory _feeRemitters,
-        address[] memory _strategists
+        address[] memory _strategists,
+        uint256 _poolId
     ) public initializer {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
         booToWftmPath = [BOO, WFTM];
-        booToUsdcPath = [BOO, lpToken0];
-        poolId = 69;
+        poolId = _poolId;
     }
 
     /**
@@ -89,20 +87,22 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
     /**
      * @dev Core function of the strat, in charge of collecting and re-investing rewards.
      *      1. Claims {BOO} from the {MASTER_CHEF}.
-     *      2. Swaps {totalFee}% of {BOO} to {WFTM} for fees.
-     *      3. Swaps half of leftover {BOO} to {lpToken0}.
-     *      4. Creates new LP tokens and deposits.
+     *      2. Swaps {BOO} to {WFTM}.
+     *      3. Charge fees.
+     *      4. Creates new LP tokens.
+     *      5. Deposits LP in the Master Chef.
      */
     function _harvestCore() internal override {
         IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
-
-        IERC20Upgradeable boo = IERC20Upgradeable(BOO);
-        _swap((boo.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR, booToWftmPath);
+        _swapToWFTM();
         _chargeFees();
-        _swap(boo.balanceOf(address(this)) / 2, booToUsdcPath);
-
         _addLiquidity();
         deposit();
+    }
+
+    function _swapToWFTM() internal {
+        IERC20Upgradeable boo = IERC20Upgradeable(BOO);
+        _swap((boo.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR, booToWftmPath);
     }
 
     /**
@@ -129,7 +129,7 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
      */
     function _chargeFees() internal {
         IERC20Upgradeable wftm = IERC20Upgradeable(WFTM);
-        uint256 wftmFee = wftm.balanceOf(address(this));
+        uint256 wftmFee = (wftm.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
         if (wftmFee != 0) {
             uint256 callFeeToUser = (wftmFee * callFee) / PERCENT_DIVISOR;
             uint256 treasuryFeeToVault = (wftmFee * treasuryFee) / PERCENT_DIVISOR;
@@ -148,6 +148,18 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
     function _addLiquidity() internal {
         uint256 lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
+
+        if (lpToken0 == WFTM) {
+            address[] memory wftmToLP1 = new address[](2);
+            wftmToLP1[0] = WFTM;
+            wftmToLP1[1] = lpToken1;
+            _swap(lp0Bal / 2, wftmToLP1);
+        } else {
+            address[] memory wftmToLP0 = new address[](2);
+            wftmToLP0[0] = WFTM;
+            wftmToLP0[1] = lpToken0;
+            _swap(lp1Bal / 2, wftmToLP0);
+        }
 
         if (lp0Bal != 0 && lp1Bal != 0) {
             IERC20Upgradeable(lpToken0).safeIncreaseAllowance(SPOOKY_ROUTER, lp0Bal);
@@ -203,7 +215,7 @@ contract ReaperStrategyBooUsdc is ReaperBaseStrategyv1_1 {
     function _retireStrat() internal override {
         IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
 
-        _swap(IERC20Upgradeable(BOO).balanceOf(address(this)) / 2, booToUsdcPath);
+        _swapToWFTM();
 
         _addLiquidity();
 
