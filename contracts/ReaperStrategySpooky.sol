@@ -97,16 +97,20 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
      *      5. Deposits LP in the Master Chef.
      */
     function _harvestCore() internal override {
-        IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
+        _claimRewards();
         _swapToWFTM();
         _chargeFees();
         _addLiquidity();
         deposit();
     }
 
+    function _claimRewards() internal {
+        IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
+    }
+
     function _swapToWFTM() internal {
         IERC20Upgradeable boo = IERC20Upgradeable(BOO);
-        _swap((boo.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR, booToWftmPath);
+        _swap((boo.balanceOf(address(this))), booToWftmPath);
     }
 
     /**
