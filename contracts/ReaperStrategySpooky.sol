@@ -23,15 +23,15 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
      * @dev Tokens Used:
      * {WFTM} - Required for liquidity routing when doing swaps.
      * {BOO} - Reward token for depositing LP into MasterChef.
-     * {want} - Address of USDC-BOO LP token. (lowercase name for FE compatibility)
-     * {lpToken0} - USDC (name for FE compatibility)
-     * {lpToken1} - BOO (name for FE compatibility)
+     * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
+     * {lpToken0} - First token of the want LP
+     * {lpToken1} - Second token of the want LP
      */
     address public constant WFTM = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
     address public constant BOO = address(0x841FAD6EAe12c286d1Fd18d1d525DFfA75C7EFFE);
-    address public constant want = address(0xf8Cb2980120469d79958151daa45Eb937c6E1eD6);
-    address public constant lpToken0 = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75);
-    address public constant lpToken1 = BOO;
+    address public want;
+    address public lpToken0;
+    address public lpToken1;
 
     /**
      * @dev Paths used to swap tokens:
@@ -53,11 +53,15 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
         address _vault,
         address[] memory _feeRemitters,
         address[] memory _strategists,
+        address _want,
         uint256 _poolId
     ) public initializer {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
-        booToWftmPath = [BOO, WFTM];
+        want = _want;
         poolId = _poolId;
+        booToWftmPath = [BOO, WFTM];
+        lpToken0 = IUniV2Pair(want).token0();
+        lpToken1 = IUniV2Pair(want).token1();
     }
 
     /**
