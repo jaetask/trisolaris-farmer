@@ -172,7 +172,8 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
 
         // If there's more DEUS, swap some for WFTM. If there's less, swap some WFTM for DEUS.
         if (deusWftmEquivalent > wftmBal) {
-            _swap((deusWftmEquivalent - wftmBal) / 2, deusToWftmPath);
+            uint256 deusAmountToSwap = (deusBal * ((deusWftmEquivalent - wftmBal) / 2)) / deusWftmEquivalent;
+            _swap(deusAmountToSwap, deusToWftmPath);
         } else if (wftmBal > deusWftmEquivalent) {
             _swap((wftmBal - deusWftmEquivalent) / 2, wftmToDeusPath);
         }
