@@ -21,13 +21,13 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Tokens Used:
-     * {WFTM} - Required for liquidity routing when doing swaps.
+     * {WAURORA} - Required for liquidity routing when doing swaps.
      * {TRI} - Reward token for depositing LP into MasterChef.
      * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
      * {lpToken0} - First token of the want LP
      * {lpToken1} - Second token of the want LP
      */
-    address public constant WFTM = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
+    address public constant WAURORA = address(0xb1fb4b94d987A6b247d87b3AC7FF2a83367ECDcB);
     address public constant TRI = address(0xFa94348467f64D5A457F75F8bc40495D33c65aBB);
     address public want;
     address public lpToken0;
@@ -35,9 +35,9 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Paths used to swap tokens:
-     * {booToWftmPath} - to swap {TRI} to {WFTM} (using TRISOLARIS_ROUTER)
+     * {triToWauroraPath} - to swap {TRI} to {WAURORA} (using TRISOLARIS_ROUTER)
      */
-    address[] public booToWftmPath;
+    address[] public triToWauroraPath;
 
     /**
      * @dev Spooky variables.
@@ -59,7 +59,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
         want = _want;
         poolId = _poolId;
-        booToWftmPath = [TRI, WFTM];
+        triToWauroraPath = [TRI, WAURORA];
         lpToken0 = IUniV2Pair(want).token0();
         lpToken1 = IUniV2Pair(want).token1();
     }
@@ -82,16 +82,17 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     function _withdraw(uint256 _amount) internal override {
         uint256 wantBal = IERC20Upgradeable(want).balanceOf(address(this));
         if (wantBal < _amount) {
-            IMasterChef(MASTER_CHEF).withdraw(poolId, _amount - wantBal);
+            IMasterChef(MASTER_CHEF).withdraw(poolId, _amount - wantBal, address(vault));
         }
 
-        IERC20Upgradeable(want).safeTransfer(vault, _amount);
+        // todo: please check this! The Masterchef takes a third "_to" param which I have pointed at vault from the ReaperBaseStrategyv1_1
+        // IERC20Upgradeable(want).safeTransfer(vault, _amount);
     }
 
     /**
      * @dev Core function of the strat, in charge of collecting and re-investing rewards.
      *      1. Claims {TRI} from the {MASTER_CHEF}.
-     *      2. Swaps {TRI} to {WFTM}.
+     *      2. Swaps {TRI} to {WAURORA}.
      *      3. Charge fees.
      *      4. Creates new LP tokens.
      *      5. Deposits LP in the Master Chef.
@@ -109,8 +110,8 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     }
 
     function _swapToWFTM() internal {
-        IERC20Upgradeable boo = IERC20Upgradeable(TRI);
-        _swap((boo.balanceOf(address(this))), booToWftmPath);
+        IERC20Upgradeable tri = IERC20Upgradeable(TRI);
+        _swap((tri.balanceOf(address(this))), triToWauroraPath);
     }
 
     /**
@@ -133,10 +134,10 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Core harvest function.
-     *      Charges fees based on the amount of WFTM gained from reward
+     *      Charges fees based on the amount of WAURORA gained from reward
      */
     function _chargeFees() internal {
-        IERC20Upgradeable wftm = IERC20Upgradeable(WFTM);
+        IERC20Upgradeable wftm = IERC20Upgradeable(WAURORA);
         uint256 wftmFee = (wftm.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
         if (wftmFee != 0) {
             uint256 callFeeToUser = (wftmFee * callFee) / PERCENT_DIVISOR;
@@ -157,14 +158,14 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
-        if (lpToken0 == WFTM) {
+        if (lpToken0 == WAURORA) {
             address[] memory wftmToLP1 = new address[](2);
-            wftmToLP1[0] = WFTM;
+            wftmToLP1[0] = WAURORA;
             wftmToLP1[1] = lpToken1;
             _swap(lp0Bal / 2, wftmToLP1);
         } else {
             address[] memory wftmToLP0 = new address[](2);
-            wftmToLP0[0] = WFTM;
+            wftmToLP0[0] = WAURORA;
             wftmToLP0[1] = lpToken0;
             _swap(lp1Bal / 2, wftmToLP0);
         }
@@ -199,17 +200,17 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Returns the approx amount of profit from harvesting.
-     *      Profit is denominated in WFTM, and takes fees into account.
+     *      Profit is denominated in WAURORA, and takes fees into account.
      */
     function estimateHarvest() external view override returns (uint256 profit, uint256 callFeeToUser) {
-        uint256 pendingReward = IMasterChef(MASTER_CHEF).pendingBOO(poolId, address(this));
+        uint256 pendingReward = IMasterChef(MASTER_CHEF).pendingTri(poolId, address(this));
         uint256 totalRewards = pendingReward + IERC20Upgradeable(TRI).balanceOf(address(this));
 
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];
+            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, triToWauroraPath)[1];
         }
 
-        profit += IERC20Upgradeable(WFTM).balanceOf(address(this));
+        profit += IERC20Upgradeable(WAURORA).balanceOf(address(this));
 
         uint256 wftmFee = (profit * totalFee) / PERCENT_DIVISOR;
         callFeeToUser = (wftmFee * callFee) / PERCENT_DIVISOR;
@@ -231,7 +232,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         _addLiquidity();
 
         (uint256 poolBal, ) = IMasterChef(MASTER_CHEF).userInfo(poolId, address(this));
-        IMasterChef(MASTER_CHEF).withdraw(poolId, poolBal);
+        IMasterChef(MASTER_CHEF).withdraw(poolId, poolBal, vault);
 
         uint256 wantBalance = IERC20Upgradeable(want).balanceOf(address(this));
         IERC20Upgradeable(want).safeTransfer(vault, wantBalance);
@@ -241,6 +242,6 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      * Withdraws all funds leaving rewards behind.
      */
     function _reclaimWant() internal override {
-        IMasterChef(MASTER_CHEF).emergencyWithdraw(poolId);
+        IMasterChef(MASTER_CHEF).emergencyWithdraw(poolId, vault);
     }
 }
