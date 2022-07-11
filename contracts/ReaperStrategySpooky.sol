@@ -16,7 +16,7 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // 3rd-party contract addresses
-    address public constant SPOOKY_ROUTER = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);
+    address public constant ROUTER = address(0x2CB45Edb4517d5947aFdE3BEAbF95A582506858B);
     address public constant MASTER_CHEF = address(0x2b2929E785374c651a81A63878Ab22742656DcDd);
 
     /**
@@ -35,7 +35,7 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Paths used to swap tokens:
-     * {booToWftmPath} - to swap {BOO} to {WFTM} (using SPOOKY_ROUTER)
+     * {booToWftmPath} - to swap {BOO} to {WFTM} (using ROUTER)
      */
     address[] public booToWftmPath;
 
@@ -121,8 +121,8 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
             return;
         }
 
-        IERC20Upgradeable(_path[0]).safeIncreaseAllowance(SPOOKY_ROUTER, _amount);
-        IUniswapV2Router02(SPOOKY_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IERC20Upgradeable(_path[0]).safeIncreaseAllowance(ROUTER, _amount);
+        IUniswapV2Router02(ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             _amount,
             0,
             _path,
@@ -173,9 +173,9 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
         lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
         if (lp0Bal != 0 && lp1Bal != 0) {
-            IERC20Upgradeable(lpToken0).safeIncreaseAllowance(SPOOKY_ROUTER, lp0Bal);
-            IERC20Upgradeable(lpToken1).safeIncreaseAllowance(SPOOKY_ROUTER, lp1Bal);
-            IUniswapV2Router02(SPOOKY_ROUTER).addLiquidity(
+            IERC20Upgradeable(lpToken0).safeIncreaseAllowance(ROUTER, lp0Bal);
+            IERC20Upgradeable(lpToken1).safeIncreaseAllowance(ROUTER, lp1Bal);
+            IUniswapV2Router02(ROUTER).addLiquidity(
                 lpToken0,
                 lpToken1,
                 lp0Bal,
@@ -206,7 +206,7 @@ contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
         uint256 totalRewards = pendingReward + IERC20Upgradeable(BOO).balanceOf(address(this));
 
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(SPOOKY_ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];
+            profit += IUniswapV2Router02(ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];
         }
 
         profit += IERC20Upgradeable(WFTM).balanceOf(address(this));
