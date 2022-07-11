@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 /**
- * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest BOO rewards and recompound.
+ * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest TRI rewards and recompound.
  */
 contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -22,20 +22,20 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     /**
      * @dev Tokens Used:
      * {WFTM} - Required for liquidity routing when doing swaps.
-     * {BOO} - Reward token for depositing LP into MasterChef.
+     * {TRI} - Reward token for depositing LP into MasterChef.
      * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
      * {lpToken0} - First token of the want LP
      * {lpToken1} - Second token of the want LP
      */
     address public constant WFTM = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
-    address public constant BOO = address(0x841FAD6EAe12c286d1Fd18d1d525DFfA75C7EFFE);
+    address public constant TRI = address(0xFa94348467f64D5A457F75F8bc40495D33c65aBB);
     address public want;
     address public lpToken0;
     address public lpToken1;
 
     /**
      * @dev Paths used to swap tokens:
-     * {booToWftmPath} - to swap {BOO} to {WFTM} (using TRISOLARIS_ROUTER)
+     * {booToWftmPath} - to swap {TRI} to {WFTM} (using TRISOLARIS_ROUTER)
      */
     address[] public booToWftmPath;
 
@@ -59,7 +59,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
         want = _want;
         poolId = _poolId;
-        booToWftmPath = [BOO, WFTM];
+        booToWftmPath = [TRI, WFTM];
         lpToken0 = IUniV2Pair(want).token0();
         lpToken1 = IUniV2Pair(want).token1();
     }
@@ -90,8 +90,8 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Core function of the strat, in charge of collecting and re-investing rewards.
-     *      1. Claims {BOO} from the {MASTER_CHEF}.
-     *      2. Swaps {BOO} to {WFTM}.
+     *      1. Claims {TRI} from the {MASTER_CHEF}.
+     *      2. Swaps {TRI} to {WFTM}.
      *      3. Charge fees.
      *      4. Creates new LP tokens.
      *      5. Deposits LP in the Master Chef.
@@ -109,7 +109,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     }
 
     function _swapToWFTM() internal {
-        IERC20Upgradeable boo = IERC20Upgradeable(BOO);
+        IERC20Upgradeable boo = IERC20Upgradeable(TRI);
         _swap((boo.balanceOf(address(this))), booToWftmPath);
     }
 
@@ -203,7 +203,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      */
     function estimateHarvest() external view override returns (uint256 profit, uint256 callFeeToUser) {
         uint256 pendingReward = IMasterChef(MASTER_CHEF).pendingBOO(poolId, address(this));
-        uint256 totalRewards = pendingReward + IERC20Upgradeable(BOO).balanceOf(address(this));
+        uint256 totalRewards = pendingReward + IERC20Upgradeable(TRI).balanceOf(address(this));
 
         if (totalRewards != 0) {
             profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];

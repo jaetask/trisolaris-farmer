@@ -34,19 +34,24 @@ describe('Vaults', function () {
   let Want;
   let want;
 
-  const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
-  const paymentSplitterAddress = '0x63cbd4134c2253041F370472c130e92daE4Ff174';
-  const wantAddress = '0xC9FB686f14bDA7e2653cF8F605Dc8551B6a53FD3';
+  /**
+   * Getting the top holders for a token on Aurora
+   * https://aurorascan.dev/token/0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c#balances
+   */
 
-  const wantHolderAddr = '0xe0c15e9fe90d56472d8a43da5d3ef34ae955583c';
-  const strategistAddr = '0x1A20D7A31e5B3Bc5f02c8A146EF6f394502a10c4';
+  const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
+  const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
+  const wantAddress = '0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c';
+
+  const wantHolderAddr = '0x4094adfab3366ff9b2a28b69e691e93d73b5e64b';
+  const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
 
   let owner;
   let wantHolder;
-  let strategist;
+  // let strategist;
 
   beforeEach(async function () {
-    //reset network
+    // reset network
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -59,27 +64,27 @@ describe('Vaults', function () {
       ],
     });
 
-    //get signers
+    // get signers
     [owner] = await ethers.getSigners();
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [wantHolderAddr],
     });
     wantHolder = await ethers.provider.getSigner(wantHolderAddr);
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [strategistAddr],
-    });
-    strategist = await ethers.provider.getSigner(strategistAddr);
+    // await hre.network.provider.request({
+    //   method: 'hardhat_impersonateAccount',
+    //   params: [strategistAddr],
+    // });
+    // strategist = await ethers.provider.getSigner(strategistAddr);
 
-    //get artifacts
+    // get artifacts
     Vault = await ethers.getContractFactory('ReaperVaultv1_4');
     Strategy = await ethers.getContractFactory('ReaperStrategyTrisolaris');
     Want = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
     const poolId = 70;
 
-    //deploy contracts
-    vault = await Vault.deploy(wantAddress, 'TOMB-MAI Tomb Crypt', 'rf-TOMB-MAI', 0, ethers.constants.MaxUint256);
+    // deploy contracts
+    vault = await Vault.deploy(wantAddress, 'TRI-USDT Trisolaris Crypt', 'rf-TRI-USDT', 0, ethers.constants.MaxUint256);
     strategy = await hre.upgrades.deployProxy(
       Strategy,
       [vault.address, [treasuryAddr, paymentSplitterAddress], [strategistAddr], wantAddress, poolId],
@@ -89,7 +94,7 @@ describe('Vaults', function () {
     await vault.initialize(strategy.address);
     want = await Want.attach(wantAddress);
 
-    //approving LP token and vault share spend
+    // approving LP token and vault share spend
     await want.connect(wantHolder).approve(vault.address, ethers.constants.MaxUint256);
   });
 
