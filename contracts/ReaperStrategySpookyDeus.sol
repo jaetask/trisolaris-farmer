@@ -16,7 +16,7 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // 3rd-party contract addresses
-    address public constant SPOOKY_ROUTER = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);
+    address public constant TRISOLARIS_ROUTER = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);
     address public constant MASTER_CHEF = address(0x18b4f774fdC7BF685daeeF66c2990b1dDd9ea6aD);
 
     /**
@@ -41,10 +41,10 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Paths used to swap tokens:
-     * {booToWftmPath} - to swap {BOO} to {WFTM} (using SPOOKY_ROUTER)
-     * {deusToWftmPath} - to swap {DEUS} to {WFTM} (using SPOOKY_ROUTER)
-     * {wftmToUsdcPath} - to swap {WFTM} to {USDC} (using SPOOKY_ROUTER)
-     * {usdcToDeiPath} - to swap {USDC} to {DEI} (using SPOOKY_ROUTER)
+     * {booToWftmPath} - to swap {BOO} to {WFTM} (using TRISOLARIS_ROUTER)
+     * {deusToWftmPath} - to swap {DEUS} to {WFTM} (using TRISOLARIS_ROUTER)
+     * {wftmToUsdcPath} - to swap {WFTM} to {USDC} (using TRISOLARIS_ROUTER)
+     * {usdcToDeiPath} - to swap {USDC} to {DEI} (using TRISOLARIS_ROUTER)
      */
     address[] public booToWftmPath;
     address[] public deusToWftmPath;
@@ -147,8 +147,8 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
             return;
         }
 
-        IERC20Upgradeable(_path[0]).safeIncreaseAllowance(SPOOKY_ROUTER, _amount);
-        IUniswapV2Router02(SPOOKY_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IERC20Upgradeable(_path[0]).safeIncreaseAllowance(TRISOLARIS_ROUTER, _amount);
+        IUniswapV2Router02(TRISOLARIS_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             _amount,
             0,
             _path,
@@ -172,9 +172,9 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
         uint256 usdcBal = IERC20Upgradeable(USDC).balanceOf(address(this));
         uint256 deiBal = IERC20Upgradeable(DEI).balanceOf(address(this));
 
-        IERC20Upgradeable(USDC).safeIncreaseAllowance(SPOOKY_ROUTER, usdcBal);
-        IERC20Upgradeable(DEI).safeIncreaseAllowance(SPOOKY_ROUTER, deiBal);
-        IUniswapV2Router02(SPOOKY_ROUTER).addLiquidity(
+        IERC20Upgradeable(USDC).safeIncreaseAllowance(TRISOLARIS_ROUTER, usdcBal);
+        IERC20Upgradeable(DEI).safeIncreaseAllowance(TRISOLARIS_ROUTER, deiBal);
+        IUniswapV2Router02(TRISOLARIS_ROUTER).addLiquidity(
             USDC,
             DEI,
             usdcBal,
@@ -207,14 +207,14 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
         uint256 pendingReward = masterChef.pendingBOO(poolId, address(this));
         uint256 totalRewards = pendingReward + IERC20Upgradeable(BOO).balanceOf(address(this));
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(SPOOKY_ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];
+            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, booToWftmPath)[1];
         }
 
         // {DEUS} reward
         pendingReward = rewarder.pendingToken(poolId, address(this));
         totalRewards = pendingReward + IERC20Upgradeable(DEUS).balanceOf(address(this));
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(SPOOKY_ROUTER).getAmountsOut(totalRewards, deusToWftmPath)[1];
+            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, deusToWftmPath)[1];
         }
 
         profit += IERC20Upgradeable(WFTM).balanceOf(address(this));
