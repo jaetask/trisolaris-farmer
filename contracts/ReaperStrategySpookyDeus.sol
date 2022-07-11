@@ -16,7 +16,7 @@ contract ReaperStrategySpookyDeus is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // 3rd-party contract addresses
-    address public constant TRISOLARIS_ROUTER = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);
+    address public constant TRISOLARIS_ROUTER = address(0x2CB45Edb4517d5947aFdE3BEAbF95A582506858B);
     address public constant MASTER_CHEF = address(0x18b4f774fdC7BF685daeeF66c2990b1dDd9ea6aD);
 
     /**
