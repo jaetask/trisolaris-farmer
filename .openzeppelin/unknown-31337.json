@@ -210,40 +210,40 @@
             "offset": 0,
             "slot": "363",
             "type": "t_address",
-            "contract": "ReaperStrategySpooky",
-            "src": "contracts\\ReaperStrategySpooky.sol:32"
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts\\ReaperStrategyTrisolaris.sol:32"
           },
           {
             "label": "lpToken0",
             "offset": 0,
             "slot": "364",
             "type": "t_address",
-            "contract": "ReaperStrategySpooky",
-            "src": "contracts\\ReaperStrategySpooky.sol:33"
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts\\ReaperStrategyTrisolaris.sol:33"
           },
           {
             "label": "lpToken1",
             "offset": 0,
             "slot": "365",
             "type": "t_address",
-            "contract": "ReaperStrategySpooky",
-            "src": "contracts\\ReaperStrategySpooky.sol:34"
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts\\ReaperStrategyTrisolaris.sol:34"
           },
           {
             "label": "booToWftmPath",
             "offset": 0,
             "slot": "366",
             "type": "t_array(t_address)dyn_storage",
-            "contract": "ReaperStrategySpooky",
-            "src": "contracts\\ReaperStrategySpooky.sol:40"
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts\\ReaperStrategyTrisolaris.sol:40"
           },
           {
             "label": "poolId",
             "offset": 0,
             "slot": "367",
             "type": "t_uint256",
-            "contract": "ReaperStrategySpooky",
-            "src": "contracts\\ReaperStrategySpooky.sol:46"
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts\\ReaperStrategyTrisolaris.sol:46"
           }
         ],
         "types": {

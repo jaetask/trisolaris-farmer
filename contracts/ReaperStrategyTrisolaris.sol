@@ -12,12 +12,12 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 /**
  * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest BOO rewards and recompound.
  */
-contract ReaperStrategySpooky is ReaperBaseStrategyv1_1 {
+contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // 3rd-party contract addresses
     address public constant TRISOLARIS_ROUTER = address(0x2CB45Edb4517d5947aFdE3BEAbF95A582506858B);
-    address public constant MASTER_CHEF = address(0x2b2929E785374c651a81A63878Ab22742656DcDd);
+    address public constant MASTER_CHEF = address(0x3838956710bcc9D122Dd23863a0549ca8D5675D6);
 
     /**
      * @dev Tokens Used:
