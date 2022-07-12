@@ -74,7 +74,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 wantBalance = IERC20Upgradeable(want).balanceOf(address(this));
         if (wantBalance != 0) {
             IERC20Upgradeable(want).safeIncreaseAllowance(MASTER_CHEF, wantBalance);
-            IMasterChef(MASTER_CHEF).deposit(poolId, wantBalance);
+            IMasterChef(MASTER_CHEF).deposit(poolId, wantBalance, address(this));
         }
     }
 
@@ -107,7 +107,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     }
 
     function _claimRewards() internal {
-        IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
+        IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
     }
 
     function _swapToWAURORA() internal {
@@ -226,7 +226,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      * Note: this is not an emergency withdraw function. For that, see panic().
      */
     function _retireStrat() internal override {
-        IMasterChef(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
+        IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
 
         _swapToWAURORA();
 

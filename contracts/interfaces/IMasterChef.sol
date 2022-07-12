@@ -27,7 +27,11 @@ interface IMasterChef {
 
     function totalAllocPoint() external view returns (uint256);
 
-    function deposit(uint256 _pid, uint256 _amount) external;
+    function deposit(
+        uint256 _pid,
+        uint256 _amount,
+        address _to
+    ) external;
 
     function tri() external view returns (address);
 

@@ -46,7 +46,7 @@ describe('Vaults', function () {
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
   const wantAddress = '0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c';
 
-  const wantHolderAddr = '0x4094adfab3366ff9b2a28b69e691e93d73b5e64b';
+  const wantHolderAddr = '0xcfe0c0fddbc896d08a9a14592b6a470e0536b25f';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
   const whaleAddress = '0xb0bD02F6a392aF548bDf1CfAeE5dFa0EefcC8EaB';
 
@@ -126,16 +126,19 @@ describe('Vaults', function () {
     });
   });
 
-  describe.skip('Vault Tests', function () {
-    xit('should allow deposits and account for them correctly', async function () {
+  describe('Vault Tests', function () {
+    it.only('should allow deposits and account for them correctly', async function () {
       const userBalance = await want.balanceOf(wantHolderAddr);
       const vaultBalance = await vault.balance();
-      const depositAmount = toWantUnit('1');
-      await vault.connect(wantHolder).deposit(depositAmount);
+      const depositAmount = toWantUnit('0.0001');
+
+      const depositTx = await vault.connect(wantHolder).deposit(depositAmount);
+      await depositTx.wait(1);
 
       const newVaultBalance = await vault.balance();
       const newUserBalance = await want.balanceOf(wantHolderAddr);
       const allowedInaccuracy = depositAmount.div(200);
+
       expect(depositAmount).to.be.closeTo(newVaultBalance, allowedInaccuracy);
     });
 
@@ -181,7 +184,7 @@ describe('Vaults', function () {
       expect(isSmallBalanceDifference).to.equal(true);
     });
 
-    it('should allow small withdrawal', async function () {
+    xit('should allow small withdrawal', async function () {
       const userBalance = await want.balanceOf(wantHolderAddr);
       const depositAmount = toWantUnit('0.00000001');
       await vault.connect(wantHolder).deposit(depositAmount);
@@ -221,7 +224,7 @@ describe('Vaults', function () {
       await strategy.harvest();
     });
 
-    it('should provide yield', async function () {
+    xit('should provide yield', async function () {
       const timeToSkip = 3600;
       const initialUserBalance = await want.balanceOf(wantHolderAddr);
       const depositAmount = initialUserBalance.div(10);
