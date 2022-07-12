@@ -57,8 +57,8 @@ describe('Vaults', function () {
       params: [
         {
           forking: {
-            jsonRpcUrl: 'https://rpc.ftm.tools/',
-            blockNumber: 35529021,
+            jsonRpcUrl: 'https://mainnet.aurora.dev',
+            blockNumber: 68777300,
           },
         },
       ],
@@ -81,7 +81,7 @@ describe('Vaults', function () {
     Vault = await ethers.getContractFactory('ReaperVaultv1_4');
     Strategy = await ethers.getContractFactory('ReaperStrategyTrisolaris');
     Want = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
-    const poolId = 70;
+    const poolId = 4;
 
     // deploy contracts
     vault = await Vault.deploy(wantAddress, 'TRI-USDT Trisolaris Crypt', 'rf-TRI-USDT', 0, ethers.constants.MaxUint256);
@@ -99,7 +99,7 @@ describe('Vaults', function () {
   });
 
   describe('Deploying the vault and strategy', function () {
-    xit('should initiate vault with a 0 balance', async function () {
+    it('should initiate vault with a 0 balance', async function () {
       const totalBalance = await vault.balance();
       const availableBalance = await vault.available();
       const pricePerFullShare = await vault.getPricePerFullShare();
@@ -109,7 +109,7 @@ describe('Vaults', function () {
     });
   });
 
-  describe('Vault Tests', function () {
+  describe.skip('Vault Tests', function () {
     xit('should allow deposits and account for them correctly', async function () {
       const userBalance = await want.balanceOf(wantHolderAddr);
       const vaultBalance = await vault.balance();
@@ -227,7 +227,7 @@ describe('Vaults', function () {
       console.log(`Average APR across ${numHarvests} harvests is ${averageAPR} basis points.`);
     });
   });
-  describe('Strategy', function () {
+  describe.skip('Strategy', function () {
     xit('should be able to pause and unpause', async function () {
       await strategy.pause();
       const depositAmount = toWantUnit('0.0000029');

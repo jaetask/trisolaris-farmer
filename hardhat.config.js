@@ -1,15 +1,15 @@
-require("dotenv").config();
+require('dotenv').config();
 
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
-require("hardhat-interface-generator");
-require("hardhat-contract-sizer");
-require("solidity-coverage");
+require('@nomiclabs/hardhat-etherscan');
+require('@nomiclabs/hardhat-waffle');
+require('hardhat-gas-reporter');
+require('hardhat-interface-generator');
+require('hardhat-contract-sizer');
+require('solidity-coverage');
 require('@openzeppelin/hardhat-upgrades');
 
 const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
-const FTMSCAN_KEY = process.env.FTMSCAN_API_KEY;
+const AURORA_SCAN_KEY = process.env.AURORA_SCAN_API_KEY;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -18,7 +18,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.11",
+        version: '0.8.11',
         settings: {
           optimizer: {
             enabled: true,
@@ -30,8 +30,8 @@ module.exports = {
   },
   networks: {
     mainnet: {
-      url: `https://rpc.ftm.tools`,
-      chainId: 250,
+      url: `https://mainnet.aurora.dev`,
+      chainId: 1313161554,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     testnet: {
@@ -41,7 +41,7 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: FTMSCAN_KEY,
+    apiKey: AURORA_SCAN_KEY,
   },
   mocha: {
     timeout: 1200000,
