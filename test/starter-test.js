@@ -34,6 +34,9 @@ describe('Vaults', function () {
   let Want;
   let want;
 
+  let Whale;
+  let whale;
+
   /**
    * Getting the top holders for a token on Aurora
    * https://aurorascan.dev/token/0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c#balances
@@ -45,10 +48,11 @@ describe('Vaults', function () {
 
   const wantHolderAddr = '0x4094adfab3366ff9b2a28b69e691e93d73b5e64b';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
+  const whaleAddress = '0xb0bD02F6a392aF548bDf1CfAeE5dFa0EefcC8EaB';
 
   let owner;
   let wantHolder;
-  // let strategist;
+  let strategist;
 
   beforeEach(async function () {
     // reset network
@@ -71,11 +75,23 @@ describe('Vaults', function () {
       params: [wantHolderAddr],
     });
     wantHolder = await ethers.provider.getSigner(wantHolderAddr);
-    // await hre.network.provider.request({
-    //   method: 'hardhat_impersonateAccount',
-    //   params: [strategistAddr],
-    // });
-    // strategist = await ethers.provider.getSigner(strategistAddr);
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [strategistAddr],
+    });
+    strategist = await ethers.provider.getSigner(strategistAddr);
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [whaleAddress],
+    });
+    whale = await ethers.provider.getSigner(whaleAddress);
+
+    // -----------------------------------------------------------------------
+    // Ensure sufficient account balances
+    await whale.sendTransaction({
+      to: wantHolderAddr,
+      value: ethers.utils.parseEther('10'),
+    });
 
     // get artifacts
     Vault = await ethers.getContractFactory('ReaperVaultv1_4');
@@ -85,6 +101,7 @@ describe('Vaults', function () {
 
     // deploy contracts
     vault = await Vault.deploy(wantAddress, 'TRI-USDT Trisolaris Crypt', 'rf-TRI-USDT', 0, ethers.constants.MaxUint256);
+
     strategy = await hre.upgrades.deployProxy(
       Strategy,
       [vault.address, [treasuryAddr, paymentSplitterAddress], [strategistAddr], wantAddress, poolId],

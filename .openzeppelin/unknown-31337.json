@@ -8,7 +8,7 @@
     },
     {
       "address": "0x8be34D7830d446747B95Aa3ace0eaA4FF19b2007",
-      "txHash": "0xe7929867a2c874913dd1d68ba56d537e88c46b04a67dea197e7d828d046e74da",
+      "txHash": "0x456aa72e629a395459ada8a9d9e5bb314b0dc71b6df8e5bc1c62381e6d717556",
       "kind": "uups"
     }
   ],
@@ -375,7 +375,7 @@
     },
     "d63fa5d9bf3e5ae26b0643abf34037d87895643f9c2fb1dbd96d48f5873ca49a": {
       "address": "0x3912aD5b13bdC3966c6d7552612Bbec462bC68c4",
-      "txHash": "0x3f6d32248e8c3653bab577eec578bb0b1a3da9be677e5130abed01cfd03a6a07",
+      "txHash": "0xa9041567a296223afbdc885ca0b1cd0bfc80aa47568c753cb754beab8a90bfee",
       "layout": {
         "storage": [
           {
