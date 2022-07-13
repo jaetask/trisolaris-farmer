@@ -250,31 +250,63 @@ describe('Vaults', function () {
     });
 
     it.only('should provide yield', async function () {
-      const timeToSkip = 3600 * 5;
-      const blocksToSkip = 14400;
-      const initialUserBalance = await want.balanceOf(wantHolderAddr);
-      const depositAmount = initialUserBalance;
-
-      await vault.connect(wantHolder).deposit(depositAmount);
-      const initialVaultBalance = await vault.balance();
+      const timeToSkip = 3600;
+      const blocksToSkip = 10000;
+      const balances = {
+        user: {
+          initial: 0,
+        },
+        vault: {
+          initial: 0,
+          postDeposit: 0,
+          postDepositDiff: 0,
+          current: 0,
+          currentDiff: 0,
+          final: 0,
+        },
+        strategy: {
+          initial: 0,
+          postDeposit: 0,
+          postDepositDiff: 0,
+          current: 0,
+          currentDiff: 0,
+          final: 0,
+        },
+      };
 
       await strategy.updateHarvestLogCadence(timeToSkip / 2);
+
+      balances.user.initial = await want.balanceOf(wantHolderAddr);
+      balances.vault.initial = await vault.balance();
+      balances.strategy.initial = await strategy.balanceOf();
+
+      await vault.connect(wantHolder).deposit(balances.user.initial);
+
+      balances.vault.postDeposit = await vault.balance();
+      balances.vault.postDepositDiff = balances.vault.postDeposit.sub(balances.vault.initial);
+      balances.strategy.postDeposit = await strategy.balanceOf();
+      balances.strategy.postDepositDiff = balances.strategy.postDeposit.sub(balances.strategy.initial);
+
+      console.log('balances', balances);
 
       const numHarvests = 5;
       for (let i = 0; i < numHarvests; i++) {
         await moveTimeForward(timeToSkip);
         await moveBlocksForward(blocksToSkip);
         await strategy.harvest();
+        balances.vault.current = await vault.balance();
+        balances.vault.currentDiff = balances.vault.current.sub(balances.vault.postDeposit);
+        balances.strategy.current = await strategy.balanceOf();
+        balances.strategy.currentDiff = balances.strategy.current.sub(balances.strategy.postDeposit);
+        console.log(i, 'balances', balances);
       }
 
-      const finalVaultBalance = await vault.balance();
+      balances.strategy.final = await strategy.balanceOf();
+      balances.vault.final = await vault.balance();
 
-      // lets debug
-      console.log('depositAmount', depositAmount);
-      console.log('initialVaultBalance', initialVaultBalance);
-      console.log('finalVaultBalance', finalVaultBalance);
-
-      expect(finalVaultBalance).to.be.gt(initialVaultBalance);
+      // We expect the yield to have increased the balance in the vault
+      expect(balances.vault.final).to.be.gt(balances.vault.postDeposit);
+      expect(balances.strategy.final).to.be.gt(balances.strategy.postDeposit);
 
       const averageAPR = await strategy.averageAPRAcrossLastNHarvests(numHarvests);
       console.log(`Average APR across ${numHarvests} harvests is ${averageAPR} basis points.`);
