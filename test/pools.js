@@ -29,11 +29,11 @@ exports.testPools = testPools;
  * @param {*} name name of the pool to find
  * @returns {*} the pool object or throws an error if not found
  */
-const findByName = (name) => () => {
+const findPoolByName = (name) => {
   const found = testPools.find((pool) => pool.name === name);
   if (!found) {
     throw new Error(`Pool ${name} not found`);
   }
   return found;
 };
-exports.findByName = findByName;
+exports.findPoolByName = findPoolByName;

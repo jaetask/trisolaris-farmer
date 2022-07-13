@@ -1,7 +1,7 @@
 const hre = require('hardhat');
 const chai = require('chai');
 const {solidity} = require('ethereum-waffle');
-const {testPools, findByName} = require('./pools');
+const {findPoolByName} = require('./pools');
 chai.use(solidity);
 const {expect} = chai;
 
@@ -43,8 +43,8 @@ describe('Vaults', function () {
 
   let whale;
 
-  const testPool = testPools.find(findByName('SHITZU-USDC'));
-  const {wantAddress, wantHolderAddr, poolId, checkPoolExists} = testPool;
+  const testPool = findPoolByName('TRI-USDT');
+  const {wantAddress, wantHolderAddr, poolId, checkPoolExists, name} = testPool;
   const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
@@ -115,6 +115,8 @@ describe('Vaults', function () {
 
     // -----------------------------------------------------------------------
     // SANITY CHECKS
+    console.log('Testing pool:', name, poolId);
+
     if (checkPoolExists) {
       const masterChefAddress = await strategy.MASTER_CHEF();
       const MasterChef = await ethers.getContractAt('IMasterChef', masterChefAddress);
