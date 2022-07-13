@@ -1,8 +1,14 @@
 const hre = require('hardhat');
 const chai = require('chai');
 const {solidity} = require('ethereum-waffle');
+const {testPools, findByName} = require('./pools');
 chai.use(solidity);
 const {expect} = chai;
+
+/**
+ * How tp get the top holders for a token on Aurora
+ * https://aurorascan.dev/token/0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c#balances
+ */
 
 const moveTimeForward = async (seconds) => {
   await network.provider.send('evm_increaseTime', [seconds]);
@@ -17,6 +23,7 @@ const moveBlocksForward = async (blocks) => {
   }
 };
 
+// todo: we also have USDT on this farm
 const toWantUnit = (num, isUSDC = false) => {
   if (isUSDC) {
     return ethers.BigNumber.from(num * 10 ** 8);
@@ -34,19 +41,12 @@ describe('Vaults', function () {
   let Want;
   let want;
 
-  let Whale;
   let whale;
 
-  /**
-   * Getting the top holders for a token on Aurora
-   * https://aurorascan.dev/token/0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c#balances
-   */
-
+  const testPool = testPools.find(findByName('SHITZU-USDC'));
+  const {wantAddress, wantHolderAddr, poolId, checkPoolExists} = testPool;
   const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
-  const wantAddress = '0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c';
-
-  const wantHolderAddr = '0xcfe0c0fddbc896d08a9a14592b6a470e0536b25f';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
   const whaleAddress = '0xb0bD02F6a392aF548bDf1CfAeE5dFa0EefcC8EaB';
 
@@ -97,7 +97,6 @@ describe('Vaults', function () {
     Vault = await ethers.getContractFactory('ReaperVaultv1_4');
     Strategy = await ethers.getContractFactory('ReaperStrategyTrisolaris');
     Want = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
-    const poolId = 4;
 
     // deploy contracts
     vault = await Vault.deploy(wantAddress, 'TRI-USDT Trisolaris Crypt', 'rf-TRI-USDT', 0, ethers.constants.MaxUint256);
@@ -113,6 +112,32 @@ describe('Vaults', function () {
 
     // approving LP token and vault share spend
     await want.connect(wantHolder).approve(vault.address, ethers.constants.MaxUint256);
+
+    // -----------------------------------------------------------------------
+    // SANITY CHECKS
+    if (checkPoolExists) {
+      const masterChefAddress = await strategy.MASTER_CHEF();
+      const MasterChef = await ethers.getContractAt('IMasterChef', masterChefAddress);
+      const poolLength = Number((await MasterChef.poolLength()).toString());
+
+      if (poolLength > 0) {
+        let poolFound = false;
+        for (let i = 0; i < poolLength; i++) {
+          const lpAddress = await MasterChef.lpToken(i);
+          if (lpAddress === wantAddress) {
+            if (poolId === i) {
+              console.log('poolId', i, 'matches OK');
+              poolFound = true;
+            } else {
+              throw new Error(`poolId (${poolId}) does not match found id (${i})`);
+            }
+          }
+        }
+        if (!poolFound) {
+          throw new Error(`poolId (${poolId}) not found with address ${wantAddress}`);
+        }
+      }
+    }
   });
 
   describe('Deploying the vault and strategy', function () {
@@ -224,10 +249,11 @@ describe('Vaults', function () {
       await strategy.harvest();
     });
 
-    it.skip('should provide yield', async function () {
-      const timeToSkip = 3600;
+    it.only('should provide yield', async function () {
+      const timeToSkip = 3600 * 5;
+      const blocksToSkip = 14400;
       const initialUserBalance = await want.balanceOf(wantHolderAddr);
-      const depositAmount = initialUserBalance.div(10);
+      const depositAmount = initialUserBalance;
 
       await vault.connect(wantHolder).deposit(depositAmount);
       const initialVaultBalance = await vault.balance();
@@ -237,16 +263,24 @@ describe('Vaults', function () {
       const numHarvests = 5;
       for (let i = 0; i < numHarvests; i++) {
         await moveTimeForward(timeToSkip);
+        await moveBlocksForward(blocksToSkip);
         await strategy.harvest();
       }
 
       const finalVaultBalance = await vault.balance();
+
+      // lets debug
+      console.log('depositAmount', depositAmount);
+      console.log('initialVaultBalance', initialVaultBalance);
+      console.log('finalVaultBalance', finalVaultBalance);
+
       expect(finalVaultBalance).to.be.gt(initialVaultBalance);
 
       const averageAPR = await strategy.averageAPRAcrossLastNHarvests(numHarvests);
       console.log(`Average APR across ${numHarvests} harvests is ${averageAPR} basis points.`);
     });
   });
+
   describe('Strategy', function () {
     it('should be able to pause and unpause', async function () {
       await strategy.pause();

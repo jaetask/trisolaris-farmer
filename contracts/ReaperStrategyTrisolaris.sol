@@ -8,6 +8,7 @@ import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniV2Pair.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "hardhat/console.sol";
 
 /**
  * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest TRI rewards and recompound.
@@ -107,7 +108,12 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     }
 
     function _claimRewards() internal {
+        uint256 preBalance = IERC20Upgradeable(TRI).balanceOf(address(this));
         IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
+        uint256 postBalance = IERC20Upgradeable(TRI).balanceOf(address(this));
+        console.log("PoolId", poolId);
+        console.log("Block", block.number, "TS", block.timestamp);
+        console.log("Claimed TRI rewards: ", preBalance, postBalance, (preBalance - postBalance));
     }
 
     function _swapToWAURORA() internal {

@@ -17,6 +17,8 @@ interface IMasterChef {
         uint256 accSushiPerShare; // Accumulated TRI per share, times 1e12. See below.
     }
 
+    function lpToken(uint256 pid) external view returns (address);
+
     function poolInfo(uint256 pid) external view returns (IMasterChef.PoolInfo memory);
 
     function userInfo(uint256 pid, address _user) external view returns (uint256 amount, uint256 rewardDebt);
