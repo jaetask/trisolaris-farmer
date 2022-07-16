@@ -48,4 +48,6 @@ interface IMasterChef {
         uint256 _amount,
         address _to
     ) external;
+
+    function harvest(uint256 _pid, address _to) external;
 }

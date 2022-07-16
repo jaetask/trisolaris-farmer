@@ -8,7 +8,12 @@
     },
     {
       "address": "0x8be34D7830d446747B95Aa3ace0eaA4FF19b2007",
-      "txHash": "0x3ab9ddce72e0e27e44c98713db03d9e8f2dc128bd8b1e449a6489c1896e7d21f",
+      "txHash": "0x62c260497b71affb7ace7da63aa38c5724298f9da96acbf9bc2bbcc059751697",
+      "kind": "uups"
+    },
+    {
+      "address": "0xB56Ab229bD4d9459e61BC7Bb34E394Ed6c1a8e39",
+      "txHash": "0xf7e6ecca76eff16a7d64014f3b84d9f6cd8426fd6eeccf01429d377079a085d8",
       "kind": "uups"
     }
   ],
@@ -373,9 +378,9 @@
         }
       }
     },
-    "f80574ab6b1ebe876b02e3e09e8b49572574a19ab9b9d3a0581ec832ed39ea34": {
-      "address": "0x3912aD5b13bdC3966c6d7552612Bbec462bC68c4",
-      "txHash": "0x734425caab38ecabf336eb8fdfe0cc82519a5333749a9141756e3ec0fb936e2c",
+    "945426d02a542f7961c3130d3cd250ad472202e0fb75d08440d85d1ad863cf68": {
+      "address": "0xB49BafEc7095d2d337A9e7DaaAE2DAA0F73d5b5A",
+      "txHash": "0x107f7b6cfe4f97b8d242104c9e81a48e1ab2c4fbc29a3e22f27ddeef50028a98",
       "layout": {
         "storage": [
           {
@@ -478,7 +483,7 @@
             "label": "harvestLog",
             "offset": 0,
             "slot": "351",
-            "type": "t_array(t_struct(Harvest)6073_storage)dyn_storage",
+            "type": "t_array(t_struct(Harvest)6042_storage)dyn_storage",
             "contract": "ReaperBaseStrategyv1_1",
             "src": "contracts/abstract/ReaperBaseStrategyv1_1.sol:27"
           },
@@ -624,7 +629,7 @@
             "label": "bytes32[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Harvest)6073_storage)dyn_storage": {
+          "t_array(t_struct(Harvest)6042_storage)dyn_storage": {
             "label": "struct ReaperBaseStrategyv1_1.Harvest[]",
             "numberOfBytes": "32"
           },
@@ -672,7 +677,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Harvest)6073_storage": {
+          "t_struct(Harvest)6042_storage": {
             "label": "struct ReaperBaseStrategyv1_1.Harvest",
             "members": [
               {

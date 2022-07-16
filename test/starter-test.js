@@ -49,10 +49,13 @@ describe('Vaults', function () {
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
   const whaleAddress = '0xb0bD02F6a392aF548bDf1CfAeE5dFa0EefcC8EaB';
+  const masterChefAddress = '0x3838956710bcc9D122Dd23863a0549ca8D5675D6';
+  const triTokenAddress = '0xFa94348467f64D5A457F75F8bc40495D33c65aBB';
 
   let owner;
   let wantHolder;
   let strategist;
+  let triToken;
 
   beforeEach(async function () {
     // reset network
@@ -62,7 +65,7 @@ describe('Vaults', function () {
         {
           forking: {
             jsonRpcUrl: 'https://mainnet.aurora.dev',
-            blockNumber: 68777300,
+            blockNumber: 69880000,
           },
         },
       ],
@@ -112,6 +115,10 @@ describe('Vaults', function () {
 
     // approving LP token and vault share spend
     await want.connect(wantHolder).approve(vault.address, ethers.constants.MaxUint256);
+
+    // connect to the TRI token
+    const ERC20 = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
+    triToken = await ERC20.attach(triTokenAddress);
 
     // -----------------------------------------------------------------------
     // SANITY CHECKS
@@ -253,7 +260,7 @@ describe('Vaults', function () {
 
     it.only('should provide yield', async function () {
       const timeToSkip = 3600;
-      const blocksToSkip = 10000;
+      const blocksToSkip = 100;
       const balances = {
         user: {
           initial: 0,
@@ -295,7 +302,13 @@ describe('Vaults', function () {
       for (let i = 0; i < numHarvests; i++) {
         await moveTimeForward(timeToSkip);
         await moveBlocksForward(blocksToSkip);
+
+        // check tri token balance at master chef for this block
+        const triBalance = await triToken.balanceOf(masterChefAddress);
+        console.log('triBalance > pre balance', triBalance);
+
         await strategy.harvest();
+
         balances.vault.current = await vault.balance();
         balances.vault.currentDiff = balances.vault.current.sub(balances.vault.postDeposit);
         balances.strategy.current = await strategy.balanceOf();

@@ -108,12 +108,10 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     }
 
     function _claimRewards() internal {
-        uint256 preBalance = IERC20Upgradeable(TRI).balanceOf(address(this));
-        IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
-        uint256 postBalance = IERC20Upgradeable(TRI).balanceOf(address(this));
-        console.log("PoolId", poolId);
-        console.log("Block", block.number, "TS", block.timestamp);
-        console.log("Claimed TRI rewards: ", preBalance, postBalance, (preBalance - postBalance));
+        uint256 pendingTri = IMasterChef(MASTER_CHEF).pendingTri(poolId, address(this));
+        if (pendingTri > 0) {
+            IMasterChef(MASTER_CHEF).harvest(poolId, address(this));
+        }
     }
 
     function _swapToWAURORA() internal {
