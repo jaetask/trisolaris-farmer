@@ -8,7 +8,6 @@ import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniV2Pair.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "hardhat/console.sol";
 
 /**
  * @dev Deposit SpookySwap LP tokens into MasterChef. Harvest TRI rewards and recompound.
@@ -24,13 +23,13 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Tokens Used:
-     * {WAURORA} - Required for liquidity routing when doing swaps.
+     * {USDT} - Required for liquidity routing when doing swaps.
      * {TRI} - Reward token for depositing LP into MasterChef.
      * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
      * {lpToken0} - First token of the want LP
      * {lpToken1} - Second token of the want LP
      */
-    address public constant WAURORA = address(0xb1fb4b94d987A6b247d87b3AC7FF2a83367ECDcB);
+    address public constant USDT = address(0x4988a896b1227218e4A686fdE5EabdcAbd91571f);
     address public constant TRI = address(0xFa94348467f64D5A457F75F8bc40495D33c65aBB);
     address public want;
     address public lpToken0;
@@ -38,9 +37,9 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Paths used to swap tokens:
-     * {triToWauroraPath} - to swap {TRI} to {WAURORA} (using TRISOLARIS_ROUTER)
+     * {triToUsdtPath} - to swap {TRI} to {USDT} (using TRISOLARIS_ROUTER)
      */
-    address[] public triToWauroraPath;
+    address[] public triToUsdtPath;
 
     /**
      * @dev Trisolaris variables.
@@ -62,7 +61,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
         want = _want;
         poolId = _poolId;
-        triToWauroraPath = [TRI, WAURORA];
+        triToUsdtPath = [TRI, USDT];
         lpToken0 = IUniV2Pair(want).token0();
         lpToken1 = IUniV2Pair(want).token1();
     }
@@ -94,14 +93,14 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     /**
      * @dev Core function of the strat, in charge of collecting and re-investing rewards.
      *      1. Claims {TRI} from the {MASTER_CHEF}.
-     *      2. Swaps {TRI} to {WAURORA}.
+     *      2. Swaps {TRI} to {USDT}.
      *      3. Charge fees.
      *      4. Creates new LP tokens.
      *      5. Deposits LP in the Master Chef.
      */
     function _harvestCore() internal override {
         _claimRewards();
-        _swapToWAURORA();
+        _swapToUSDT();
         _chargeFees();
         _addLiquidity();
         deposit();
@@ -114,9 +113,10 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         }
     }
 
-    function _swapToWAURORA() internal {
+    function _swapToUSDT() internal {
         IERC20Upgradeable tri = IERC20Upgradeable(TRI);
-        _swap((tri.balanceOf(address(this))), triToWauroraPath);
+        uint256 triBalance = tri.balanceOf(address(this));
+        _swap(triBalance / 2, triToUsdtPath);
     }
 
     /**
@@ -139,20 +139,20 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Core harvest function.
-     *      Charges fees based on the amount of WAURORA gained from reward
+     *      Charges fees based on the amount of USDT gained from reward
      */
     function _chargeFees() internal {
-        IERC20Upgradeable waurora = IERC20Upgradeable(WAURORA);
-        uint256 wauroraFee = (waurora.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
-        if (wauroraFee != 0) {
-            uint256 callFeeToUser = (wauroraFee * callFee) / PERCENT_DIVISOR;
-            uint256 treasuryFeeToVault = (wauroraFee * treasuryFee) / PERCENT_DIVISOR;
+        IERC20Upgradeable usdt = IERC20Upgradeable(USDT);
+        uint256 usdtFee = (usdt.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
+        if (usdtFee != 0) {
+            uint256 callFeeToUser = (usdtFee * callFee) / PERCENT_DIVISOR;
+            uint256 treasuryFeeToVault = (usdtFee * treasuryFee) / PERCENT_DIVISOR;
             uint256 feeToStrategist = (treasuryFeeToVault * strategistFee) / PERCENT_DIVISOR;
             treasuryFeeToVault -= feeToStrategist;
 
-            waurora.safeTransfer(msg.sender, callFeeToUser);
-            waurora.safeTransfer(treasury, treasuryFeeToVault);
-            waurora.safeTransfer(strategistRemitter, feeToStrategist);
+            usdt.safeTransfer(msg.sender, callFeeToUser);
+            usdt.safeTransfer(treasury, treasuryFeeToVault);
+            usdt.safeTransfer(strategistRemitter, feeToStrategist);
         }
     }
 
@@ -163,16 +163,16 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
-        if (lpToken0 == WAURORA) {
-            address[] memory wauroraToLP1 = new address[](2);
-            wauroraToLP1[0] = WAURORA;
-            wauroraToLP1[1] = lpToken1;
-            _swap(lp0Bal / 2, wauroraToLP1);
+        if (lpToken0 == USDT) {
+            address[] memory usdtToLP1 = new address[](2);
+            usdtToLP1[0] = USDT;
+            usdtToLP1[1] = lpToken1;
+            _swap(lp0Bal / 2, usdtToLP1);
         } else {
-            address[] memory wauroraToLP0 = new address[](2);
-            wauroraToLP0[0] = WAURORA;
-            wauroraToLP0[1] = lpToken0;
-            _swap(lp1Bal / 2, wauroraToLP0);
+            address[] memory usdtToLP0 = new address[](2);
+            usdtToLP0[0] = USDT;
+            usdtToLP0[1] = lpToken0;
+            _swap(lp1Bal / 2, usdtToLP0);
         }
 
         lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
@@ -205,21 +205,21 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Returns the approx amount of profit from harvesting.
-     *      Profit is denominated in WAURORA, and takes fees into account.
+     *      Profit is denominated in USDT, and takes fees into account.
      */
     function estimateHarvest() external view override returns (uint256 profit, uint256 callFeeToUser) {
         uint256 pendingReward = IMasterChef(MASTER_CHEF).pendingTri(poolId, address(this));
         uint256 totalRewards = pendingReward + IERC20Upgradeable(TRI).balanceOf(address(this));
 
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, triToWauroraPath)[1];
+            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, triToUsdtPath)[1];
         }
 
-        profit += IERC20Upgradeable(WAURORA).balanceOf(address(this));
+        profit += IERC20Upgradeable(USDT).balanceOf(address(this));
 
-        uint256 wauroraFee = (profit * totalFee) / PERCENT_DIVISOR;
-        callFeeToUser = (wauroraFee * callFee) / PERCENT_DIVISOR;
-        profit -= wauroraFee;
+        uint256 usdtFee = (profit * totalFee) / PERCENT_DIVISOR;
+        callFeeToUser = (usdtFee * callFee) / PERCENT_DIVISOR;
+        profit -= usdtFee;
     }
 
     /**
@@ -232,7 +232,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     function _retireStrat() internal override {
         IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
 
-        _swapToWAURORA();
+        _swapToUSDT();
 
         _addLiquidity();
 

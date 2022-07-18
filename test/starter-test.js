@@ -2,11 +2,13 @@ const hre = require('hardhat');
 const chai = require('chai');
 const {solidity} = require('ethereum-waffle');
 const {findPoolByName} = require('./pools');
+
 chai.use(solidity);
 const {expect} = chai;
+const {ethers, network} = hre;
 
 /**
- * How tp get the top holders for a token on Aurora
+ * How to get the top holders for a token on Aurora
  * https://aurorascan.dev/token/0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c#balances
  */
 
@@ -44,12 +46,11 @@ describe('Vaults', function () {
   let whale;
 
   const testPool = findPoolByName('TRI-USDT');
-  const {wantAddress, wantHolderAddr, poolId, checkPoolExists, name} = testPool;
+  const {wantAddress, wantHolderAddr, poolId, checkPoolExists} = testPool;
   const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
   const whaleAddress = '0xb0bD02F6a392aF548bDf1CfAeE5dFa0EefcC8EaB';
-  const masterChefAddress = '0x3838956710bcc9D122Dd23863a0549ca8D5675D6';
   const triTokenAddress = '0xFa94348467f64D5A457F75F8bc40495D33c65aBB';
 
   let owner;
@@ -122,7 +123,7 @@ describe('Vaults', function () {
 
     // -----------------------------------------------------------------------
     // SANITY CHECKS
-    console.log('Testing pool:', name, poolId);
+    // console.log('Testing pool:', name, poolId);
 
     if (checkPoolExists) {
       const masterChefAddress = await strategy.MASTER_CHEF();
@@ -135,7 +136,7 @@ describe('Vaults', function () {
           const lpAddress = await MasterChef.lpToken(i);
           if (lpAddress === wantAddress) {
             if (poolId === i) {
-              console.log('poolId', i, 'matches OK');
+              // console.log('poolId', i, 'matches OK');
               poolFound = true;
             } else {
               throw new Error(`poolId (${poolId}) does not match found id (${i})`);
@@ -162,22 +163,19 @@ describe('Vaults', function () {
 
   describe('Vault Tests', function () {
     it('should allow deposits and account for them correctly', async function () {
-      const userBalance = await want.balanceOf(wantHolderAddr);
-      const vaultBalance = await vault.balance();
       const depositAmount = toWantUnit('0.0001');
 
       const depositTx = await vault.connect(wantHolder).deposit(depositAmount);
       await depositTx.wait(1);
 
       const newVaultBalance = await vault.balance();
-      const newUserBalance = await want.balanceOf(wantHolderAddr);
       const allowedInaccuracy = depositAmount.div(200);
 
       expect(depositAmount).to.be.closeTo(newVaultBalance, allowedInaccuracy);
     });
 
     it('should mint user their pool share', async function () {
-      const userBalance = await want.balanceOf(wantHolderAddr);
+      // const userBalance = await want.balanceOf(wantHolderAddr);
       const depositAmount = toWantUnit('0.0000029');
       await vault.connect(wantHolder).deposit(depositAmount);
 
@@ -206,7 +204,6 @@ describe('Vaults', function () {
       await vault.connect(wantHolder).deposit(depositAmount);
 
       await vault.connect(wantHolder).withdrawAll();
-      const newUserVaultBalance = await vault.balanceOf(wantHolderAddr);
       const userBalanceAfterWithdraw = await want.balanceOf(wantHolderAddr);
 
       const securityFee = 10;
@@ -224,7 +221,6 @@ describe('Vaults', function () {
       await vault.connect(wantHolder).deposit(depositAmount);
 
       await vault.connect(wantHolder).withdrawAll();
-      const newUserVaultBalance = await vault.balanceOf(wantHolderAddr);
       const userBalanceAfterWithdraw = await want.balanceOf(wantHolderAddr);
 
       const securityFee = 10;
@@ -242,7 +238,6 @@ describe('Vaults', function () {
       await vault.connect(wantHolder).deposit(depositAmount);
 
       await vault.connect(wantHolder).withdraw(depositAmount);
-      const newUserVaultBalance = await vault.balanceOf(wantHolderAddr);
       const userBalanceAfterWithdraw = await want.balanceOf(wantHolderAddr);
 
       const securityFee = 10;
@@ -254,11 +249,17 @@ describe('Vaults', function () {
     });
 
     it('should be able to harvest', async function () {
+      const timeToSkip = 3600;
+      const blocksToSkip = 100;
+
       await vault.connect(wantHolder).deposit(toWantUnit('0.0000029'));
+
+      await moveTimeForward(timeToSkip);
+      await moveBlocksForward(blocksToSkip);
       await strategy.harvest();
     });
 
-    it.only('should provide yield', async function () {
+    it('should provide yield', async function () {
       const timeToSkip = 3600;
       const blocksToSkip = 100;
       const balances = {
@@ -296,7 +297,7 @@ describe('Vaults', function () {
       balances.strategy.postDeposit = await strategy.balanceOf();
       balances.strategy.postDepositDiff = balances.strategy.postDeposit.sub(balances.strategy.initial);
 
-      console.log('balances', balances);
+      // console.log('balances', balances);
 
       const numHarvests = 5;
       for (let i = 0; i < numHarvests; i++) {
@@ -304,8 +305,8 @@ describe('Vaults', function () {
         await moveBlocksForward(blocksToSkip);
 
         // check tri token balance at master chef for this block
-        const triBalance = await triToken.balanceOf(masterChefAddress);
-        console.log('triBalance > pre balance', triBalance);
+        // const triBalance = await triToken.balanceOf(masterChefAddress);
+        // console.log('triBalance > pre balance', triBalance);
 
         await strategy.harvest();
 
@@ -313,7 +314,7 @@ describe('Vaults', function () {
         balances.vault.currentDiff = balances.vault.current.sub(balances.vault.postDeposit);
         balances.strategy.current = await strategy.balanceOf();
         balances.strategy.currentDiff = balances.strategy.current.sub(balances.strategy.postDeposit);
-        console.log(i, 'balances', balances);
+        // console.log(i, 'balances', balances);
       }
 
       balances.strategy.final = await strategy.balanceOf();
@@ -338,16 +339,23 @@ describe('Vaults', function () {
       await expect(vault.connect(wantHolder).deposit(depositAmount)).to.not.be.reverted;
     });
 
+    /**
+     * This is an old test that was `xit` out and doesn't make any sense any more.
+     */
     it.skip('should be able to panic', async function () {
       const depositAmount = toWantUnit('0.0000029');
       await vault.connect(wantHolder).deposit(depositAmount);
-      const vaultBalance = await vault.balance();
+      // const vaultBalance = await vault.balance();
       const strategyBalance = await strategy.balanceOf();
       await strategy.panic();
 
-      const wantStratBalance = await want.balanceOf(strategy.address);
+      const wantStrategyBalance = await want.balanceOf(strategy.address);
       const allowedImprecision = toWantUnit('0.00000000001');
-      expect(strategyBalance).to.be.closeTo(wantStratBalance, allowedImprecision);
+
+      console.log('strategyBalance', strategyBalance);
+      console.log('wantStrategyBalance', wantStrategyBalance);
+
+      expect(strategyBalance).to.be.closeTo(wantStrategyBalance, allowedImprecision);
     });
 
     it('should be able to retire strategy', async function () {
@@ -369,12 +377,12 @@ describe('Vaults', function () {
       await expect(strategy.retireStrat()).to.not.be.reverted;
     });
 
-    it.skip('should be able to estimate harvest', async function () {
+    it('should be able to estimate harvest', async function () {
       const whaleDepositAmount = toWantUnit('0.0000029');
       await vault.connect(wantHolder).deposit(whaleDepositAmount);
       await moveBlocksForward(100);
       await strategy.harvest();
-      await moveBlocksForward(100);
+      await moveBlocksForward(400); // needs to process enough blocks for callFeeToUser to be > 0
       const [profit, callFeeToUser] = await strategy.estimateHarvest();
       console.log(`profit: ${profit}`);
       const hasProfit = profit.gt(0);

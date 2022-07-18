@@ -9,7 +9,7 @@ const testPools = [
     wantAddress: '0x5E74D85311fe2409c341Ce49Ce432BB950D221DE',
     wantHolderAddr: '0xe7b8b36f118f83e0dd3e19e1fa21852adb8f96d0',
     rewards: ['TRI'],
-    checkPoolExists: true, // loops over the MasterChef contract and locates the poolId
+    checkPoolExists: false, // loops over the MasterChef contract and locates the poolId
   },
   {
     name: 'TRI-USDT',
@@ -18,7 +18,7 @@ const testPools = [
     wantAddress: '0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c',
     wantHolderAddr: '0xcfe0c0fddbc896d08a9a14592b6a470e0536b25f',
     rewards: ['TRI'],
-    checkPoolExists: true,
+    checkPoolExists: false,
   },
   // all the other TRI rewarding pools are on the original MasterChef
 ];
