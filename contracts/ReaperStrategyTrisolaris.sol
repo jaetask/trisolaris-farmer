@@ -184,17 +184,18 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
-        if (lpToken0 == USDT) {
-            address[] memory usdtToLP1 = new address[](2);
-            usdtToLP1[0] = USDT;
-            usdtToLP1[1] = lpToken1;
-            _swap(lp0Bal / 2, usdtToLP1);
-        } else {
-            address[] memory usdtToLP0 = new address[](2);
-            usdtToLP0[0] = USDT;
-            usdtToLP0[1] = lpToken0;
-            _swap(lp1Bal / 2, usdtToLP0);
-        }
+        // skipping in this pool as we just coverted tokens
+        // if (lpToken0 == USDT) {
+        //     address[] memory usdtToLP1 = new address[](2);
+        //     usdtToLP1[0] = USDT;
+        //     usdtToLP1[1] = lpToken1;
+        //     _swap(lp0Bal / 2, usdtToLP1);
+        // } else {
+        //     address[] memory usdtToLP0 = new address[](2);
+        //     usdtToLP0[0] = USDT;
+        //     usdtToLP0[1] = lpToken0;
+        //     _swap(lp1Bal / 2, usdtToLP0);
+        // }
 
         lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));

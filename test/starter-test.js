@@ -382,13 +382,13 @@ describe('Vaults', function () {
       await vault.connect(wantHolder).deposit(whaleDepositAmount);
       await moveBlocksForward(100);
       await strategy.harvest();
-      await moveBlocksForward(400); // needs to process enough blocks for callFeeToUser to be > 0
+      await moveBlocksForward(500); // needs to process enough blocks for callFeeToUser to be > 0
       const [profit, callFeeToUser] = await strategy.estimateHarvest();
       console.log(`profit: ${profit}`);
       const hasProfit = profit.gt(0);
       const hasCallFee = callFeeToUser.gt(0);
-      expect(hasProfit).to.equal(true);
-      expect(hasCallFee).to.equal(true);
+      expect(hasProfit).to.equal(true, 'profit should be greater than 0');
+      expect(hasCallFee).to.equal(true, 'callFeeToUser should be greater than 0');
     });
   });
 });
