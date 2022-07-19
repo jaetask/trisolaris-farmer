@@ -23,12 +23,14 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Tokens Used:
+     * {USDC} - Required for liquidity routing when doing swaps.
      * {USDT} - Required for liquidity routing when doing swaps.
      * {TRI} - Reward token for depositing LP into MasterChef.
      * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
      * {lpToken0} - First token of the want LP
      * {lpToken1} - Second token of the want LP
      */
+    address public constant USDC = address(0xB12BFcA5A55806AaF64E99521918A4bf0fC40802);
     address public constant USDT = address(0x4988a896b1227218e4A686fdE5EabdcAbd91571f);
     address public constant TRI = address(0xFa94348467f64D5A457F75F8bc40495D33c65aBB);
     address public want;
@@ -37,8 +39,10 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Paths used to swap tokens:
+     * {triToUsdcPath} - to swap {TRI} to {USDC} (using TRISOLARIS_ROUTER)
      * {triToUsdtPath} - to swap {TRI} to {USDT} (using TRISOLARIS_ROUTER)
      */
+    address[] public triToUsdcPath;
     address[] public triToUsdtPath;
 
     /**
@@ -61,6 +65,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         __ReaperBaseStrategy_init(_vault, _feeRemitters, _strategists);
         want = _want;
         poolId = _poolId;
+        triToUsdcPath = [TRI, USDC];
         triToUsdtPath = [TRI, USDT];
         lpToken0 = IUniV2Pair(want).token0();
         lpToken1 = IUniV2Pair(want).token1();
@@ -99,10 +104,15 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      *      5. Deposits LP in the Master Chef.
      */
     function _harvestCore() internal override {
+        // claim TRI from masterchef
         _claimRewards();
-        _swapToUSDT();
+        // charge fees on rewards, and convert them to USDC to distribture
         _chargeFees();
+        // swap half of whatever is left to USDT
+        _swapToUSDT();
+        // create LP tokens
         _addLiquidity();
+        // deposit LP back into strategy as compounded
         deposit();
     }
 
@@ -139,20 +149,31 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     /**
      * @dev Core harvest function.
-     *      Charges fees based on the amount of USDT gained from reward
+     *      Charges fees based on the amount of TRI gained from reward
      */
     function _chargeFees() internal {
-        IERC20Upgradeable usdt = IERC20Upgradeable(USDT);
-        uint256 usdtFee = (usdt.balanceOf(address(this)) * totalFee) / PERCENT_DIVISOR;
-        if (usdtFee != 0) {
-            uint256 callFeeToUser = (usdtFee * callFee) / PERCENT_DIVISOR;
-            uint256 treasuryFeeToVault = (usdtFee * treasuryFee) / PERCENT_DIVISOR;
+        IERC20Upgradeable tri = IERC20Upgradeable(TRI);
+        IERC20Upgradeable usdc = IERC20Upgradeable(USDC);
+
+        uint256 triBalance = tri.balanceOf(address(this));
+        uint256 triFee = (triBalance * totalFee) / PERCENT_DIVISOR;
+
+        if (triFee != 0) {
+            // swap tri fees to usdc
+            uint256 usdcBalanceBefore = usdc.balanceOf(address(this));
+            _swap(triFee, triToUsdcPath);
+            uint256 usdcBalanceAfter = usdc.balanceOf(address(this));
+            uint256 usdcFee = usdcBalanceAfter - usdcBalanceBefore;
+
+            // distribtute usdc to fee remitters
+            uint256 callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
+            uint256 treasuryFeeToVault = (usdcFee * treasuryFee) / PERCENT_DIVISOR;
             uint256 feeToStrategist = (treasuryFeeToVault * strategistFee) / PERCENT_DIVISOR;
             treasuryFeeToVault -= feeToStrategist;
 
-            usdt.safeTransfer(msg.sender, callFeeToUser);
-            usdt.safeTransfer(treasury, treasuryFeeToVault);
-            usdt.safeTransfer(strategistRemitter, feeToStrategist);
+            usdc.safeTransfer(msg.sender, callFeeToUser);
+            usdc.safeTransfer(treasury, treasuryFeeToVault);
+            usdc.safeTransfer(strategistRemitter, feeToStrategist);
         }
     }
 

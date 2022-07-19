@@ -13,7 +13,7 @@
     },
     {
       "address": "0xB56Ab229bD4d9459e61BC7Bb34E394Ed6c1a8e39",
-      "txHash": "0xd274a0dce5e3e84d16ad3635ba9ca1ec0ebf494a43bbbb4e66d945de79828637",
+      "txHash": "0x51c3bccfa71a842b7f66442ce005afb1c7d47943361db54b96f8ae1d46824cb1",
       "kind": "uups"
     }
   ],
@@ -378,9 +378,9 @@
         }
       }
     },
-    "eda09f06de4b6db738f74a3c22ac8eef7fbd7b0543b2612ecaa4ceebbd6d2de1": {
+    "8aa7741d39c146cbdaeb061280853545fd0a16bf8b75d2b4b455d1353b25c0bb": {
       "address": "0xB49BafEc7095d2d337A9e7DaaAE2DAA0F73d5b5A",
-      "txHash": "0x2d0c3e6ca6f7798fccb8de9693a65addbe8d36659119c11133c51afab9b5f1bc",
+      "txHash": "0x88762de9f4d1fd73959e2747e9129481289afa2bdd98b633053b7a93d24c237f",
       "layout": {
         "storage": [
           {
@@ -483,7 +483,7 @@
             "label": "harvestLog",
             "offset": 0,
             "slot": "351",
-            "type": "t_array(t_struct(Harvest)6040_storage)dyn_storage",
+            "type": "t_array(t_struct(Harvest)6097_storage)dyn_storage",
             "contract": "ReaperBaseStrategyv1_1",
             "src": "contracts/abstract/ReaperBaseStrategyv1_1.sol:27"
           },
@@ -581,7 +581,7 @@
             "slot": "363",
             "type": "t_address",
             "contract": "ReaperStrategyTrisolaris",
-            "src": "contracts/ReaperStrategyTrisolaris.sol:34"
+            "src": "contracts/ReaperStrategyTrisolaris.sol:36"
           },
           {
             "label": "lpToken0",
@@ -589,7 +589,7 @@
             "slot": "364",
             "type": "t_address",
             "contract": "ReaperStrategyTrisolaris",
-            "src": "contracts/ReaperStrategyTrisolaris.sol:35"
+            "src": "contracts/ReaperStrategyTrisolaris.sol:37"
           },
           {
             "label": "lpToken1",
@@ -597,23 +597,31 @@
             "slot": "365",
             "type": "t_address",
             "contract": "ReaperStrategyTrisolaris",
-            "src": "contracts/ReaperStrategyTrisolaris.sol:36"
+            "src": "contracts/ReaperStrategyTrisolaris.sol:38"
           },
           {
-            "label": "triToUsdtPath",
+            "label": "triToUsdcPath",
             "offset": 0,
             "slot": "366",
             "type": "t_array(t_address)dyn_storage",
             "contract": "ReaperStrategyTrisolaris",
-            "src": "contracts/ReaperStrategyTrisolaris.sol:42"
+            "src": "contracts/ReaperStrategyTrisolaris.sol:45"
+          },
+          {
+            "label": "triToUsdtPath",
+            "offset": 0,
+            "slot": "367",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "ReaperStrategyTrisolaris",
+            "src": "contracts/ReaperStrategyTrisolaris.sol:46"
           },
           {
             "label": "poolId",
             "offset": 0,
-            "slot": "367",
+            "slot": "368",
             "type": "t_uint256",
             "contract": "ReaperStrategyTrisolaris",
-            "src": "contracts/ReaperStrategyTrisolaris.sol:48"
+            "src": "contracts/ReaperStrategyTrisolaris.sol:52"
           }
         ],
         "types": {
@@ -629,7 +637,7 @@
             "label": "bytes32[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Harvest)6040_storage)dyn_storage": {
+          "t_array(t_struct(Harvest)6097_storage)dyn_storage": {
             "label": "struct ReaperBaseStrategyv1_1.Harvest[]",
             "numberOfBytes": "32"
           },
@@ -677,7 +685,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Harvest)6040_storage": {
+          "t_struct(Harvest)6097_storage": {
             "label": "struct ReaperBaseStrategyv1_1.Harvest",
             "members": [
               {
