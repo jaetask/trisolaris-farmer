@@ -1,16 +1,16 @@
 const hre = require('hardhat');
 const chai = require('chai');
-const { solidity } = require('ethereum-waffle');
+const {solidity} = require('ethereum-waffle');
 chai.use(solidity);
-const { expect } = chai;
+const {expect} = chai;
 
-const moveTimeForward = async seconds => {
+const moveTimeForward = async (seconds) => {
   await network.provider.send('evm_increaseTime', [seconds]);
   await network.provider.send('evm_mine');
 };
 
 // use with small values in case harvest is block-dependent instead of time-dependent
-const moveBlocksForward = async blocks => {
+const moveBlocksForward = async (blocks) => {
   for (let i = 0; i < blocks; i++) {
     await network.provider.send('evm_increaseTime', [1]);
     await network.provider.send('evm_mine');
@@ -34,7 +34,7 @@ describe('Vaults', function () {
   let Want;
   let want;
   let boo;
-  
+
   const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
   const paymentSplitterAddress = '0x63cbd4134c2253041F370472c130e92daE4Ff174';
   const wantAddress = '0xD343b8361Ce32A9e570C1fC8D4244d32848df88B';
@@ -45,7 +45,7 @@ describe('Vaults', function () {
 
   const booAddress = '0x841FAD6EAe12c286d1Fd18d1d525DFfA75C7EFFE';
   const booHolderAddr = '0xf778F4D7a14A8CB73d5261f9C61970ef4E7D7842';
-  
+
   let owner;
   let wantHolder;
   let strategist;
@@ -64,7 +64,7 @@ describe('Vaults', function () {
         },
       ],
     });
-    
+
     //get signers
     [owner] = await ethers.getSigners();
     await hre.network.provider.request({
@@ -89,17 +89,11 @@ describe('Vaults', function () {
     Want = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
 
     //deploy contracts
-    vault = await Vault.deploy(
-      wantAddress,
-      'FTM-DEUS Spooky Crypt',
-      'rf-sp-FTM-DEUS',
-      0,
-      ethers.constants.MaxUint256,
-    );
+    vault = await Vault.deploy(wantAddress, 'FTM-DEUS Spooky Crypt', 'rf-sp-FTM-DEUS', 0, ethers.constants.MaxUint256);
     strategy = await hre.upgrades.deployProxy(
       Strategy,
       [vault.address, [treasuryAddr, paymentSplitterAddress], [strategistAddr], wantAddress, mcPoolId],
-      { kind: 'uups' },
+      {kind: 'uups'},
     );
     await strategy.deployed();
     await vault.initialize(strategy.address);
@@ -172,7 +166,7 @@ describe('Vaults', function () {
       const vaultBalance = await vault.balance();
       const depositAmount = toWantUnit('0.001');
       await vault.connect(wantHolder).deposit(depositAmount);
-      
+
       const newVaultBalance = await vault.balance();
       const newUserBalance = await want.balanceOf(wantHolderAddr);
       const allowedInaccuracy = depositAmount.div(200);
@@ -211,7 +205,7 @@ describe('Vaults', function () {
       await vault.connect(wantHolder).withdrawAll();
       const newUserVaultBalance = await vault.balanceOf(wantHolderAddr);
       const userBalanceAfterWithdraw = await want.balanceOf(wantHolderAddr);
-      
+
       const securityFee = 10;
       const percentDivisor = 10000;
       const withdrawFee = depositAmount.mul(securityFee).div(percentDivisor);
@@ -248,7 +242,6 @@ describe('Vaults', function () {
       const userBalance = await want.balanceOf(wantHolderAddr);
       const depositAmount = toWantUnit('0.0000000000001');
       await vault.connect(wantHolder).deposit(depositAmount);
-
 
       await vault.connect(wantHolder).withdraw(depositAmount);
       const newUserVaultBalance = await vault.balanceOf(wantHolderAddr);
