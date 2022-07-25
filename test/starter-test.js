@@ -1,7 +1,7 @@
 const hre = require('hardhat');
 const chai = require('chai');
 const {solidity} = require('ethereum-waffle');
-const {findPoolByName} = require('./pools');
+const {findPoolByName} = require('../pools');
 
 chai.use(solidity);
 const {expect} = chai;
@@ -45,8 +45,8 @@ describe('Vaults', function () {
 
   let whale;
 
-  const testPool = findPoolByName('TRI-USDT');
-  const {wantAddress, wantHolderAddr, poolId, checkPoolExists} = testPool;
+  const testPool = findPoolByName('wNEAR-ETH');
+  const {wantAddress, wantHolderAddr, poolId, checkPoolExists, tokenName, tokenSymbol} = testPool;
   const treasuryAddr = '0x0e7c5313E9BB80b654734d9b7aB1FB01468deE3b';
   const paymentSplitterAddress = '0x65e45d2f3f43b613416614c73f18fdd3aa2b8391';
   const strategistAddr = '0x6ca3052E6D4b46c3437FA4C7235A0907805aaeC8';
@@ -66,7 +66,7 @@ describe('Vaults', function () {
         {
           forking: {
             jsonRpcUrl: 'https://mainnet.aurora.dev',
-            blockNumber: 69880000,
+            blockNumber: 70603499, // This is after the want holder bought their LP tokens
           },
         },
       ],
@@ -103,7 +103,7 @@ describe('Vaults', function () {
     Want = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
 
     // deploy contracts
-    vault = await Vault.deploy(wantAddress, 'TRI-USDT Trisolaris Crypt', 'rf-TRI-USDT', 0, ethers.constants.MaxUint256);
+    vault = await Vault.deploy(wantAddress, tokenName, tokenSymbol, 0, ethers.constants.MaxUint256);
 
     strategy = await hre.upgrades.deployProxy(
       Strategy,
@@ -120,34 +120,6 @@ describe('Vaults', function () {
     // connect to the TRI token
     const ERC20 = await ethers.getContractFactory('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20');
     triToken = await ERC20.attach(triTokenAddress);
-
-    // -----------------------------------------------------------------------
-    // SANITY CHECKS
-    // console.log('Testing pool:', name, poolId);
-
-    if (checkPoolExists) {
-      const masterChefAddress = await strategy.MASTER_CHEF();
-      const MasterChef = await ethers.getContractAt('IMasterChef', masterChefAddress);
-      const poolLength = Number((await MasterChef.poolLength()).toString());
-
-      if (poolLength > 0) {
-        let poolFound = false;
-        for (let i = 0; i < poolLength; i++) {
-          const lpAddress = await MasterChef.lpToken(i);
-          if (lpAddress === wantAddress) {
-            if (poolId === i) {
-              // console.log('poolId', i, 'matches OK');
-              poolFound = true;
-            } else {
-              throw new Error(`poolId (${poolId}) does not match found id (${i})`);
-            }
-          }
-        }
-        if (!poolFound) {
-          throw new Error(`poolId (${poolId}) not found with address ${wantAddress}`);
-        }
-      }
-    }
   });
 
   describe('Deploying the vault and strategy', function () {
@@ -163,8 +135,7 @@ describe('Vaults', function () {
 
   describe('Vault Tests', function () {
     it('should allow deposits and account for them correctly', async function () {
-      const depositAmount = toWantUnit('0.0001');
-
+      const depositAmount = toWantUnit('10');
       const depositTx = await vault.connect(wantHolder).deposit(depositAmount);
       await depositTx.wait(1);
 
@@ -252,7 +223,7 @@ describe('Vaults', function () {
       const timeToSkip = 3600;
       const blocksToSkip = 100;
 
-      await vault.connect(wantHolder).deposit(toWantUnit('0.0000029'));
+      await vault.connect(wantHolder).deposit(toWantUnit('1000'));
 
       await moveTimeForward(timeToSkip);
       await moveBlocksForward(blocksToSkip);
@@ -359,7 +330,7 @@ describe('Vaults', function () {
     });
 
     it('should be able to retire strategy', async function () {
-      const depositAmount = toWantUnit('0.0000029');
+      const depositAmount = toWantUnit('1000');
       await vault.connect(wantHolder).deposit(depositAmount);
       const vaultBalance = await vault.balance();
       const strategyBalance = await strategy.balanceOf();
@@ -368,7 +339,7 @@ describe('Vaults', function () {
       await expect(strategy.retireStrat()).to.not.be.reverted;
       const newVaultBalance = await vault.balance();
       const newStrategyBalance = await strategy.balanceOf();
-      const allowedImprecision = toWantUnit('0.000000001');
+      const allowedImprecision = toWantUnit('0.1');
       expect(newVaultBalance).to.be.closeTo(vaultBalance, allowedImprecision);
       expect(newStrategyBalance).to.be.lt(allowedImprecision);
     });
@@ -378,7 +349,7 @@ describe('Vaults', function () {
     });
 
     it('should be able to estimate harvest', async function () {
-      const whaleDepositAmount = toWantUnit('0.0000029');
+      const whaleDepositAmount = toWantUnit('1000');
       await vault.connect(wantHolder).deposit(whaleDepositAmount);
       await moveBlocksForward(100);
       await strategy.harvest();

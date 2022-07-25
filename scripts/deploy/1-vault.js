@@ -1,11 +1,16 @@
+import {findPoolByName} from '../../pools';
+
 async function main() {
   const Vault = await ethers.getContractFactory('ReaperVaultv1_4');
 
-  const wantAddress = '0x61C9E05d1Cdb1b70856c7a2c53fA9c220830633c';
-  const tokenName = 'TRI-USDT Trisolaris Crypt';
-  const tokenSymbol = 'rf-TRI-USDT';
   const depositFee = 0;
   const tvlCap = ethers.constants.MaxUint256;
+  const pool = findPoolByName('wNEAR-ETH');
+  const {wantAddress, tokenName, tokenSymbol} = pool;
+  console.log('');
+  console.log('Deploying:');
+  console.log('tokenName', tokenName, `(${tokenSymbol})`);
+  console.log('wantAddress', wantAddress);
 
   const vault = await Vault.deploy(wantAddress, tokenName, tokenSymbol, depositFee, tvlCap);
 

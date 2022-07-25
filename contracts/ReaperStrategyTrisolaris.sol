@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./abstract/ReaperBaseStrategyv1_1.sol";
-import "./interfaces/IMasterChef.sol";
+import "./interfaces/IMasterChefV1.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniV2Pair.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -19,19 +19,21 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
 
     // 3rd-party contract addresses
     address public constant TRISOLARIS_ROUTER = address(0x2CB45Edb4517d5947aFdE3BEAbF95A582506858B);
-    address public constant MASTER_CHEF = address(0x3838956710bcc9D122Dd23863a0549ca8D5675D6);
+    address public constant MASTER_CHEF = address(0x1f1Ed214bef5E83D8f5d0eB5D7011EB965D0D79B);
 
     /**
      * @dev Tokens Used:
      * {USDC} - Required for liquidity routing when doing swaps.
-     * {USDT} - Required for liquidity routing when doing swaps.
+     * {wNEAR} - Required for liquidity routing when doing swaps.
+     * {wETH} - Required for liquidity routing when doing swaps.
      * {TRI} - Reward token for depositing LP into MasterChef.
      * {want} - Address of the LP token to farm. (lowercase name for FE compatibility)
      * {lpToken0} - First token of the want LP
      * {lpToken1} - Second token of the want LP
      */
     address public constant USDC = address(0xB12BFcA5A55806AaF64E99521918A4bf0fC40802);
-    address public constant USDT = address(0x4988a896b1227218e4A686fdE5EabdcAbd91571f);
+    address public constant wNEAR = address(0xC42C30aC6Cc15faC9bD938618BcaA1a1FaE8501d);
+    address public constant wETH = address(0xC9BdeEd33CD01541e1eeD10f90519d2C06Fe3feB);
     address public constant TRI = address(0xFa94348467f64D5A457F75F8bc40495D33c65aBB);
     address public want;
     address public lpToken0;
@@ -40,10 +42,11 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     /**
      * @dev Paths used to swap tokens:
      * {triToUsdcPath} - to swap {TRI} to {USDC} (using TRISOLARIS_ROUTER)
-     * {triToUsdtPath} - to swap {TRI} to {USDT} (using TRISOLARIS_ROUTER)
+     * {triToWnearPath} - to swap {TRI} to {USDT} (using TRISOLARIS_ROUTER)
      */
     address[] public triToUsdcPath;
-    address[] public triToUsdtPath;
+    address[] public triToWnearPath;
+    address[] public triToWethPath;
 
     /**
      * @dev Trisolaris variables.
@@ -66,7 +69,8 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         want = _want;
         poolId = _poolId;
         triToUsdcPath = [TRI, USDC];
-        triToUsdtPath = [TRI, USDT];
+        triToWnearPath = [TRI, wNEAR];
+        triToWethPath = [TRI, wETH];
         lpToken0 = IUniV2Pair(want).token0();
         lpToken1 = IUniV2Pair(want).token1();
     }
@@ -79,7 +83,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 wantBalance = IERC20Upgradeable(want).balanceOf(address(this));
         if (wantBalance != 0) {
             IERC20Upgradeable(want).safeIncreaseAllowance(MASTER_CHEF, wantBalance);
-            IMasterChef(MASTER_CHEF).deposit(poolId, wantBalance, address(this));
+            IMasterChefV1(MASTER_CHEF).deposit(poolId, wantBalance);
         }
     }
 
@@ -90,7 +94,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 wantBal = IERC20Upgradeable(want).balanceOf(address(this));
 
         if (wantBal < _amount) {
-            IMasterChef(MASTER_CHEF).withdraw(poolId, _amount - wantBal, address(this));
+            IMasterChefV1(MASTER_CHEF).withdraw(poolId, _amount - wantBal);
         }
         IERC20Upgradeable(want).safeTransfer(vault, _amount);
     }
@@ -98,8 +102,9 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
     /**
      * @dev Core function of the strat, in charge of collecting and re-investing rewards.
      *      1. Claims {TRI} from the {MASTER_CHEF}.
-     *      2. Swaps {TRI} to {USDT}.
      *      3. Charge fees.
+     *      2. Swaps half remaining {TRI} to {wNEAR}.
+     *      2. Swaps remaining {TRI} to {wETH}.
      *      4. Creates new LP tokens.
      *      5. Deposits LP in the Master Chef.
      */
@@ -108,25 +113,33 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         _claimRewards();
         // charge fees on rewards, and convert them to USDC to distribture
         _chargeFees();
-        // swap half of whatever is left to USDT
-        _swapToUSDT();
+        // Swaps half remaining {TRI} to {wNEAR}
+        _swapToWnear();
+        // Swaps remaining {TRI} to {wETH}.
+        _swapToWeth();
         // create LP tokens
         _addLiquidity();
         // deposit LP back into strategy as compounded
         deposit();
     }
 
-    function _claimRewards() internal {
-        uint256 pendingTri = IMasterChef(MASTER_CHEF).pendingTri(poolId, address(this));
-        if (pendingTri > 0) {
-            IMasterChef(MASTER_CHEF).harvest(poolId, address(this));
-        }
-    }
-
-    function _swapToUSDT() internal {
+    function _swapToWnear() internal {
         IERC20Upgradeable tri = IERC20Upgradeable(TRI);
         uint256 triBalance = tri.balanceOf(address(this));
-        _swap(triBalance / 2, triToUsdtPath);
+        _swap(triBalance / 2, triToWnearPath);
+    }
+
+    function _swapToWeth() internal {
+        IERC20Upgradeable tri = IERC20Upgradeable(TRI);
+        uint256 triBalance = tri.balanceOf(address(this));
+        _swap(triBalance, triToWethPath);
+    }
+
+    function _claimRewards() internal {
+        uint256 pendingTri = IMasterChefV1(MASTER_CHEF).pendingTri(poolId, address(this));
+        if (pendingTri > 0) {
+            IMasterChefV1(MASTER_CHEF).harvest(poolId);
+        }
     }
 
     /**
@@ -184,19 +197,6 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
         uint256 lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         uint256 lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
-        // skipping in this pool as we just coverted tokens
-        // if (lpToken0 == USDT) {
-        //     address[] memory usdtToLP1 = new address[](2);
-        //     usdtToLP1[0] = USDT;
-        //     usdtToLP1[1] = lpToken1;
-        //     _swap(lp0Bal / 2, usdtToLP1);
-        // } else {
-        //     address[] memory usdtToLP0 = new address[](2);
-        //     usdtToLP0[0] = USDT;
-        //     usdtToLP0[1] = lpToken0;
-        //     _swap(lp1Bal / 2, usdtToLP0);
-        // }
-
         lp0Bal = IERC20Upgradeable(lpToken0).balanceOf(address(this));
         lp1Bal = IERC20Upgradeable(lpToken1).balanceOf(address(this));
 
@@ -221,7 +221,7 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      *      It takes into account both the funds in hand, plus the funds in the MasterChef.
      */
     function balanceOf() public view override returns (uint256) {
-        (uint256 amount, ) = IMasterChef(MASTER_CHEF).userInfo(poolId, address(this));
+        (uint256 amount, ) = IMasterChefV1(MASTER_CHEF).userInfo(poolId, address(this));
         return amount + IERC20Upgradeable(want).balanceOf(address(this));
     }
 
@@ -230,18 +230,18 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      *      Profit is denominated in USDT, and takes fees into account.
      */
     function estimateHarvest() external view override returns (uint256 profit, uint256 callFeeToUser) {
-        uint256 pendingReward = IMasterChef(MASTER_CHEF).pendingTri(poolId, address(this));
+        uint256 pendingReward = IMasterChefV1(MASTER_CHEF).pendingTri(poolId, address(this));
         uint256 totalRewards = pendingReward + IERC20Upgradeable(TRI).balanceOf(address(this));
 
         if (totalRewards != 0) {
-            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, triToUsdtPath)[1];
+            profit += IUniswapV2Router02(TRISOLARIS_ROUTER).getAmountsOut(totalRewards, triToWnearPath)[1];
         }
 
-        profit += IERC20Upgradeable(USDT).balanceOf(address(this));
+        profit += IERC20Upgradeable(USDC).balanceOf(address(this));
 
-        uint256 usdtFee = (profit * totalFee) / PERCENT_DIVISOR;
-        callFeeToUser = (usdtFee * callFee) / PERCENT_DIVISOR;
-        profit -= usdtFee;
+        uint256 usdcFee = (profit * totalFee) / PERCENT_DIVISOR;
+        callFeeToUser = (usdcFee * callFee) / PERCENT_DIVISOR;
+        profit -= usdcFee;
     }
 
     /**
@@ -252,14 +252,16 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      * Note: this is not an emergency withdraw function. For that, see panic().
      */
     function _retireStrat() internal override {
-        IMasterChef(MASTER_CHEF).deposit(poolId, 0, address(this)); // deposit 0 to claim rewards
+        IMasterChefV1(MASTER_CHEF).deposit(poolId, 0); // deposit 0 to claim rewards
 
-        _swapToUSDT();
+        _swapToWnear();
+
+        _swapToWeth();
 
         _addLiquidity();
 
-        (uint256 poolBal, ) = IMasterChef(MASTER_CHEF).userInfo(poolId, address(this));
-        IMasterChef(MASTER_CHEF).withdraw(poolId, poolBal, address(this));
+        (uint256 poolBal, ) = IMasterChefV1(MASTER_CHEF).userInfo(poolId, address(this));
+        IMasterChefV1(MASTER_CHEF).withdraw(poolId, poolBal);
 
         uint256 wantBalance = IERC20Upgradeable(want).balanceOf(address(this));
         IERC20Upgradeable(want).safeTransfer(vault, wantBalance);
@@ -269,6 +271,6 @@ contract ReaperStrategyTrisolaris is ReaperBaseStrategyv1_1 {
      * Withdraws all funds leaving rewards behind.
      */
     function _reclaimWant() internal override {
-        IMasterChef(MASTER_CHEF).emergencyWithdraw(poolId, vault);
+        IMasterChefV1(MASTER_CHEF).emergencyWithdraw(poolId, vault);
     }
 }
