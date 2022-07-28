@@ -232,7 +232,7 @@ describe('Vaults', function () {
 
     it('should provide yield', async function () {
       const timeToSkip = 3600;
-      const blocksToSkip = 100;
+      const blocksToSkip = 20000;
       const balances = {
         user: {
           initial: 0,
